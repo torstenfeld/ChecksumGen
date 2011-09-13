@@ -1,3 +1,7 @@
+#Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_Res_Fileversion=0.0.0.1
+#AutoIt3Wrapper_Res_LegalCopyright=Copyright - Torsten Feld (feldstudie.net)
+#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
 #include <ButtonConstants.au3>
 #include <EditConstants.au3>
@@ -13,6 +17,8 @@ Global $gResultText
 
 FileDelete($gDbgFile) ; cleaning old logfile
 
+_CreateShellExHandler()
+
 $gFile = _GetCommandLineParameters()
 ;~ $gFile = _GetFileForChecksum()
 ;~ MsgBox(0, "$gFile", $gFile)
@@ -20,6 +26,26 @@ $gFile = _GetCommandLineParameters()
 ;~ MsgBox(0, "ChecksumGen", _GenerateChecksums($gFile))
 $gResultText = _GenerateChecksums($gFile)
 _GuiOutput($gResultText)
+
+Func _CreateShellExHandler()
+	Local $lRegReturn
+	Local $lRegKey = "HKEY_CLASSES_ROOT\*\shell\Show checksums\command"
+
+	$lRegReturn = RegRead($lRegKey, "")
+	If @error Then
+		_WriteDebug("WARN;_CreateShellExHandler;ShellExtension not set - creating")
+		RegWrite($lRegKey, "", "REG_SZ", @ScriptFullPath & " %1")
+		If @error Then _WriteDebug("ERR ;_CreateShellExHandler;Error setting ShellEx: " & @error)
+	Else
+		_WriteDebug("INFO;_CreateShellExHandler;ShellExtension set")
+		If Not ($lRegReturn = @ScriptFullPath & " %1") Then
+			_WriteDebug("WARN;_CreateShellExHandler;ShellExtension not set correctly - changing")
+			RegWrite($lRegKey, "", "REG_SZ", @ScriptFullPath & " %1")
+			If @error Then _WriteDebug("ERR ;_CreateShellExHandler;Error setting ShellEx: " & @error)
+		EndIf
+	EndIf
+
+EndFunc
 
 Func _GenerateChecksums($lFile)
 
@@ -83,7 +109,6 @@ Func _GuiOutput($lText)
 		Switch $nMsg
 			Case $GUI_EVENT_CLOSE, $Button_Close
 				Exit
-
 		EndSwitch
 	WEnd
 
