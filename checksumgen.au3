@@ -54,7 +54,7 @@ EndFunc
 
 Func _GenerateChecksums($lFile)
 
-	Local $lMd2Sum, $lMd4Sum, $lMd5Sum, $lSha1Sum, $lReturnValue, $lSize, $lhFile
+	Local $lMd2Sum, $lMd4Sum, $lMd5Sum, $lSha1Sum, $lReturnValue, $lSize, $lhFile, $lTimeStart, $lTimeDuration
 	Local $lSizeRef = 10240000
 
 	$lhFile = _WinAPI_CreateFile($lFile, 2, 2)
@@ -68,6 +68,7 @@ Func _GenerateChecksums($lFile)
 		$lmessage = "Generating checksums" & @LF & "please wait..."
 		SplashTextOn("ChecksumGen", $lmessage, 250, 100, -1, -1, 50)
 	EndIf
+	$lTimeStart = TimerInit()
 	_Crypt_Startup()
 	_WriteDebug("INFO;_GenerateChecksums;_Crypt_Startup initialized")
 
@@ -78,13 +79,15 @@ Func _GenerateChecksums($lFile)
 
 	_Crypt_Shutdown()
 	_WriteDebug("INFO;_EnumerateMd5Sums;_Crypt_Shutdown initialized")
+	$lTimeDuration = TimerDiff($lTimeStart)
 	If $lSize > $lSizeRef Then SplashOff()
 
-	$lReturnValue = "File: " & @TAB & $lFile & @CRLF & @CRLF & _
-		"MD2: " & @TAB & $lMd2Sum & @CRLF & _
-		"MD4: " & @TAB & $lMd4Sum & @CRLF & _
-		"MD5: " & @TAB & $lMd5Sum & @CRLF & _
-		"SHA1: " & @TAB & $lSha1Sum
+	$lReturnValue = "File: " & @TAB & @TAB & $lFile & @CRLF & @CRLF & _
+		"MD2: " & @TAB & @TAB & $lMd2Sum & @CRLF & _
+		"MD4: " & @TAB & @TAB & $lMd4Sum & @CRLF & _
+		"MD5: " & @TAB & @TAB & $lMd5Sum & @CRLF & _
+		"SHA1: " & @TAB & @TAB & $lSha1Sum & @CRLF & @CRLF & _
+		"Time needed: " & @TAB & StringFormat("%.2f", $lTimeDuration / 1000) & " seconds"
 
 	Return $lReturnValue
 
