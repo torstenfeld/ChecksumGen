@@ -3,6 +3,7 @@
 #AutoIt3Wrapper_Res_LegalCopyright=Copyright - Torsten Feld (feldstudie.net)
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
+#Include <WinAPI.au3>
 #include <ButtonConstants.au3>
 #include <EditConstants.au3>
 #include <GUIConstantsEx.au3>
@@ -15,7 +16,11 @@ Global $gDbgFile = $gDirTemp & "\checksumgendbg.log"
 Global $gFile = ""
 Global $gResultText
 
-FileDelete($gDbgFile) ; cleaning old logfile
+If FileExists($gDbgFile) Then
+	FileDelete($gDbgFile) ; cleaning old logfile
+Else
+	If Not FileExists($gDirTemp) Then DirCreate($gDirTemp)
+EndIf
 
 _CreateShellExHandler()
 
@@ -34,13 +39,13 @@ Func _CreateShellExHandler()
 	$lRegReturn = RegRead($lRegKey, "")
 	If @error Then
 		_WriteDebug("WARN;_CreateShellExHandler;ShellExtension not set - creating")
-		RegWrite($lRegKey, "", "REG_SZ", @ScriptFullPath & " %1")
+		RegWrite($lRegKey, "", "REG_SZ", @ScriptFullPath & ' "%1"')
 		If @error Then _WriteDebug("ERR ;_CreateShellExHandler;Error setting ShellEx: " & @error)
 	Else
 		_WriteDebug("INFO;_CreateShellExHandler;ShellExtension set")
 		If Not ($lRegReturn = @ScriptFullPath & " %1") Then
 			_WriteDebug("WARN;_CreateShellExHandler;ShellExtension not set correctly - changing")
-			RegWrite($lRegKey, "", "REG_SZ", @ScriptFullPath & " %1")
+			RegWrite($lRegKey, "", "REG_SZ", @ScriptFullPath & ' "%1"')
 			If @error Then _WriteDebug("ERR ;_CreateShellExHandler;Error setting ShellEx: " & @error)
 		EndIf
 	EndIf
@@ -49,8 +54,20 @@ EndFunc
 
 Func _GenerateChecksums($lFile)
 
-	Local $lMd2Sum, $lMd4Sum, $lMd5Sum, $lSha1Sum, $lReturnValue
+	Local $lMd2Sum, $lMd4Sum, $lMd5Sum, $lSha1Sum, $lReturnValue, $lSize, $lhFile
+	Local $lSizeRef = 10240000
 
+	$lhFile = _WinAPI_CreateFile($lFile, 2, 2)
+	$lSize = _WinAPI_GetFileSizeEx($lhFile)
+	_WinAPI_CloseHandle($lhFile)
+
+;~ 	MsgBox(0, "size", $lSize)
+;~ 	Exit
+
+	If $lSize > $lSizeRef Then
+		$lmessage = "Generating checksums" & @LF & "please wait..."
+		SplashTextOn("ChecksumGen", $lmessage, 250, 100, -1, -1, 50)
+	EndIf
 	_Crypt_Startup()
 	_WriteDebug("INFO;_GenerateChecksums;_Crypt_Startup initialized")
 
@@ -61,6 +78,7 @@ Func _GenerateChecksums($lFile)
 
 	_Crypt_Shutdown()
 	_WriteDebug("INFO;_EnumerateMd5Sums;_Crypt_Shutdown initialized")
+	If $lSize > $lSizeRef Then SplashOff()
 
 	$lReturnValue = "File: " & @TAB & $lFile & @CRLF & @CRLF & _
 		"MD2: " & @TAB & $lMd2Sum & @CRLF & _
@@ -177,5 +195,6 @@ Func _WriteDebug($lParam) ; $lType, $lFunc, $lString) ; creates debuglog for ana
 	Next
 
 	FileWriteLine($gDbgFile, @MDAY & @MON & @YEAR & " " & @HOUR & ":" & @MIN & ":" & @SEC & "." & @MSEC & " - " & $lArrayTemp[1] & " - " & $lArrayTemp[2] & " - " & $lArrayTemp[3])
+	If @error Then MsgBox(16, "ChecksumGen - Error", "Error in FileWriteLine: " & @error)
 ;~ 	FileWriteLine($gDbgFile, @HOUR & ":" & @MIN & ":" & @SEC & "." & @MSEC & " - " & $lType & " - " & $lFunc & " - " & $lString)
 EndFunc   ;==>_WriteDebug
