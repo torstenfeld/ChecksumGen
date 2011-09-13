@@ -1,11 +1,15 @@
 
-
+#include <ButtonConstants.au3>
+#include <EditConstants.au3>
+#include <GUIConstantsEx.au3>
+#include <WindowsConstants.au3>
 #Include <Crypt.au3>
 
 
 Global $gDirTemp = @TempDir & "\checksumgen"
 Global $gDbgFile = $gDirTemp & "\checksumgendbg.log"
 Global $gFile = ""
+Global $gResultText
 
 FileDelete($gDbgFile) ; cleaning old logfile
 
@@ -13,7 +17,9 @@ $gFile = _GetCommandLineParameters()
 ;~ $gFile = _GetFileForChecksum()
 ;~ MsgBox(0, "$gFile", $gFile)
 ;~ Exit
-MsgBox(0, "ChecksumGen", _GenerateChecksums($gFile))
+;~ MsgBox(0, "ChecksumGen", _GenerateChecksums($gFile))
+$gResultText = _GenerateChecksums($gFile)
+_GuiOutput($gResultText)
 
 Func _GenerateChecksums($lFile)
 
@@ -30,7 +36,8 @@ Func _GenerateChecksums($lFile)
 	_Crypt_Shutdown()
 	_WriteDebug("INFO;_EnumerateMd5Sums;_Crypt_Shutdown initialized")
 
-	$lReturnValue = "MD2: " & @TAB & $lMd2Sum & @CRLF & _
+	$lReturnValue = "File: " & @TAB & $lFile & @CRLF & @CRLF & _
+		"MD2: " & @TAB & $lMd2Sum & @CRLF & _
 		"MD4: " & @TAB & $lMd4Sum & @CRLF & _
 		"MD5: " & @TAB & $lMd5Sum & @CRLF & _
 		"SHA1: " & @TAB & $lSha1Sum
@@ -44,11 +51,11 @@ Func _GetCommandLineParameters() ; reading parameters for leaklogger - dbg ok
 
 	If $CmdLine[0] <> "" Then
 
-
 		_WriteDebug('INFO;_GetCommandLineParameters;Parameter "' & $CmdLine[1] & '" found')
 		Return $CmdLine[1]
 	Else
 		_WriteDebug('INFO;_GetCommandLineParameters;No Parameter found')
+		MsgBox(16,"ChecksumGen - Error","No parameter was given",10)
 		Exit 1
 	EndIf
 EndFunc   ;==>_GetCommandLineParameters
@@ -61,9 +68,26 @@ Func _GetFileForChecksum()
 
 EndFunc
 
+Func _GuiOutput($lText)
 
+	#Region ### START Koda GUI section ### Form=
+	$Form_Output = GUICreate("ChecksumGen", 470, 241, 192, 124)
+	$Edit_Output = GUICtrlCreateEdit("", 8, 8, 449, 193, $ES_READONLY)
+	GUICtrlSetData(-1, $lText)
+	$Button_Close = GUICtrlCreateButton("Close", 165, 208, 139, 25, BitOR($BS_DEFPUSHBUTTON,$WS_GROUP))
+	GUISetState(@SW_SHOW)
+	#EndRegion ### END Koda GUI section ###
 
+	While 1
+		$nMsg = GUIGetMsg()
+		Switch $nMsg
+			Case $GUI_EVENT_CLOSE, $Button_Close
+				Exit
 
+		EndSwitch
+	WEnd
+
+EndFunc
 
 Func _Array2DAdd(ByRef $avArray, $sValue = '')
 ;~ 	Return 			Succes -1
@@ -98,7 +122,6 @@ Func _Array2DAdd(ByRef $avArray, $sValue = '')
 	EndIf
 	Return -1
 EndFunc   ;==>_Array2DAdd
-
 
 Func _WriteDebug($lParam) ; $lType, $lFunc, $lString) ; creates debuglog for analyzing problems
 	Local $lArray[4]
