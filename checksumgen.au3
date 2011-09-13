@@ -1,5 +1,7 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Res_Fileversion=0.0.0.1
+#AutoIt3Wrapper_Res_Comment=https://github.com/torstenfeld/ChecksumGen
+#AutoIt3Wrapper_Res_Description=Tool provides md5 and sha1 hashes for a single file via explorer context menu
+#AutoIt3Wrapper_Res_Fileversion=0.0.0.4
 #AutoIt3Wrapper_Res_LegalCopyright=Copyright - Torsten Feld (feldstudie.net)
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
@@ -25,10 +27,6 @@ EndIf
 _CreateShellExHandler()
 
 $gFile = _GetCommandLineParameters()
-;~ $gFile = _GetFileForChecksum()
-;~ MsgBox(0, "$gFile", $gFile)
-;~ Exit
-;~ MsgBox(0, "ChecksumGen", _GenerateChecksums($gFile))
 $gResultText = _GenerateChecksums($gFile)
 _GuiOutput($gResultText)
 
@@ -61,9 +59,6 @@ Func _GenerateChecksums($lFile)
 	$lSize = _WinAPI_GetFileSizeEx($lhFile)
 	_WinAPI_CloseHandle($lhFile)
 
-;~ 	MsgBox(0, "size", $lSize)
-;~ 	Exit
-
 	If $lSize > $lSizeRef Then
 		$lmessage = "Generating checksums" & @LF & "please wait..."
 		SplashTextOn("ChecksumGen", $lmessage, 250, 100, -1, -1, 50)
@@ -83,18 +78,18 @@ Func _GenerateChecksums($lFile)
 	If $lSize > $lSizeRef Then SplashOff()
 
 	$lReturnValue = "File: " & @TAB & @TAB & $lFile & @CRLF & @CRLF & _
-		"MD2: " & @TAB & @TAB & $lMd2Sum & @CRLF & _
-		"MD4: " & @TAB & @TAB & $lMd4Sum & @CRLF & _
 		"MD5: " & @TAB & @TAB & $lMd5Sum & @CRLF & _
 		"SHA1: " & @TAB & @TAB & $lSha1Sum & @CRLF & @CRLF & _
 		"Time needed: " & @TAB & StringFormat("%.2f", $lTimeDuration / 1000) & " seconds"
+
+;~ 		"MD2: " & @TAB & @TAB & $lMd2Sum & @CRLF & _ ; commented as not often needed and takes too long
+;~ 		"MD4: " & @TAB & @TAB & $lMd4Sum & @CRLF & _
 
 	Return $lReturnValue
 
 EndFunc
 
-Func _GetCommandLineParameters() ; reading parameters for leaklogger - dbg ok
-
+Func _GetCommandLineParameters() ; reading parameters
 
 	If $CmdLine[0] <> "" Then
 
@@ -135,40 +130,6 @@ Func _GuiOutput($lText)
 
 EndFunc
 
-Func _Array2DAdd(ByRef $avArray, $sValue = '')
-;~ 	Return 			Succes -1
-;~ 	Failure			0 and set @error
-;~ 	@error = 1		given array is not array
-;~ 	@error = 2		given parts of Element too less/much
-
-	If (Not IsArray($avArray)) Then
-		SetError(1)
-		Return 0
-	EndIf
-	Local $UBound2nd = UBound($avArray, 2)
-	If @error = 2 Then
-		ReDim $avArray[UBound($avArray) + 1]
-		$avArray[UBound($avArray) - 1] = $sValue
-	Else
-		Local $arValue
-		ReDim $avArray[UBound($avArray) + 1][$UBound2nd]
-		If $sValue = '' Then
-			For $i = 0 To $UBound2nd - 2
-				$sValue &= '|'
-			Next
-		EndIf
-		$arValue = StringSplit($sValue, '|')
-		If $arValue[0] <> $UBound2nd Then
-			SetError(2)
-			Return 0
-		EndIf
-		For $i = 0 To $UBound2nd - 1
-			$avArray[UBound($avArray) - 1][$i] = $arValue[$i + 1]
-		Next
-	EndIf
-	Return -1
-EndFunc   ;==>_Array2DAdd
-
 Func _WriteDebug($lParam) ; $lType, $lFunc, $lString) ; creates debuglog for analyzing problems
 	Local $lArray[4]
 	Local $lResult
@@ -187,11 +148,6 @@ Func _WriteDebug($lParam) ; $lType, $lFunc, $lString) ; creates debuglog for ana
 		$lArrayTemp[3] = "StringSplit failed"
 	EndIf
 
-;~ 	if (Not $gAdvDebug) and ($lArrayTemp[1] = "INFO") Then
-;~ 		SetError(1)
-;~ 		Return -1
-;~ 	EndIf
-
 	For $i = 1 To $lArrayTemp[0]
 		If $i > 1 Then $lResult = $lResult & @CRLF
 		$lResult = $lResult & $lArray[$i] & $lArrayTemp[$i]
@@ -199,5 +155,4 @@ Func _WriteDebug($lParam) ; $lType, $lFunc, $lString) ; creates debuglog for ana
 
 	FileWriteLine($gDbgFile, @MDAY & @MON & @YEAR & " " & @HOUR & ":" & @MIN & ":" & @SEC & "." & @MSEC & " - " & $lArrayTemp[1] & " - " & $lArrayTemp[2] & " - " & $lArrayTemp[3])
 	If @error Then MsgBox(16, "ChecksumGen - Error", "Error in FileWriteLine: " & @error)
-;~ 	FileWriteLine($gDbgFile, @HOUR & ":" & @MIN & ":" & @SEC & "." & @MSEC & " - " & $lType & " - " & $lFunc & " - " & $lString)
 EndFunc   ;==>_WriteDebug
