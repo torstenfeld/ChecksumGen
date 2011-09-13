@@ -5,17 +5,15 @@
 
 Global $gDirTemp = @TempDir & "\checksumgen"
 Global $gDbgFile = $gDirTemp & "\checksumgendbg.log"
+Global $gFile = ""
 
+FileDelete($gDbgFile) ; cleaning old logfile
 
-MsgBox(0, "ChecksumGen", _GenerateChecksums(_GetFileForChecksum()))
-
-Func _GetFileForChecksum()
-	Local $lFile
-
-	$lFile = FileOpenDialog("ChecksumGen - Open File", @ScriptDir, "File (*.*)")
-	Return $lFile
-
-EndFunc
+$gFile = _GetCommandLineParameters()
+;~ $gFile = _GetFileForChecksum()
+;~ MsgBox(0, "$gFile", $gFile)
+;~ Exit
+MsgBox(0, "ChecksumGen", _GenerateChecksums($gFile))
 
 Func _GenerateChecksums($lFile)
 
@@ -40,6 +38,30 @@ Func _GenerateChecksums($lFile)
 	Return $lReturnValue
 
 EndFunc
+
+Func _GetCommandLineParameters() ; reading parameters for leaklogger - dbg ok
+
+
+	If $CmdLine[0] <> "" Then
+
+
+		_WriteDebug('INFO;_GetCommandLineParameters;Parameter "' & $CmdLine[1] & '" found')
+		Return $CmdLine[1]
+	Else
+		_WriteDebug('INFO;_GetCommandLineParameters;No Parameter found')
+		Exit 1
+	EndIf
+EndFunc   ;==>_GetCommandLineParameters
+
+Func _GetFileForChecksum()
+	Local $lFile
+
+	$lFile = FileOpenDialog("ChecksumGen - Open File", @ScriptDir, "File (*.*)")
+	Return $lFile
+
+EndFunc
+
+
 
 
 
